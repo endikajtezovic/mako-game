@@ -19,10 +19,10 @@ public partial class EyeTransition : Node
     {
         Vector2I ws = new Vector2I(1152, 648);
 
-        // Black background
+        // Black background — position + size directly, no anchors (parent is plain Node)
         var bg = new ColorRect();
         bg.Color = Colors.Black;
-        bg.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        bg.Position = Vector2.Zero;
         bg.Size = new Vector2(ws.X, ws.Y);
         AddChild(bg);
 

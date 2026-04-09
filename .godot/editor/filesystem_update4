@@ -6,3 +6,5 @@ res://Assets/Scripts/UI/PixelLetter.cs
 res://Assets/Scripts/UI/CatEyes.cs
 res://Assets/Scripts/UI/EyeTransition.cs
 res://Assets/Scripts/UI/PixelTextButton.cs
+res://Assets/Scripts/Player/Player.cs
+res://Assets/Scripts/Environment/LevelBuilder.cs
