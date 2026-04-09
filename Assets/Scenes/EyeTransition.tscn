@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://eye_transition"]
+
+[ext_resource type="Script" path="res://Assets/Scripts/UI/EyeTransition.cs" id="1"]
+
+[node name="EyeTransition" type="Node"]
+script = ExtResource("1")

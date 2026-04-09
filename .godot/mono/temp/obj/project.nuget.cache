@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "oACsqNPTKTo=",
+  "success": true,
+  "projectFilePath": "/Users/endikajtezovic/Documents/GitHub/mako-game/mako.csproj",
+  "expectedPackageFiles": [
+    "/Users/endikajtezovic/.nuget/packages/godot.sourcegenerators/4.6.2/godot.sourcegenerators.4.6.2.nupkg.sha512",
+    "/Users/endikajtezovic/.nuget/packages/godotsharp/4.6.2/godotsharp.4.6.2.nupkg.sha512",
+    "/Users/endikajtezovic/.nuget/packages/godotsharpeditor/4.6.2/godotsharpeditor.4.6.2.nupkg.sha512",
+    "/Users/endikajtezovic/.nuget/packages/microsoft.netcore.app.ref/8.0.25/microsoft.netcore.app.ref.8.0.25.nupkg.sha512",
+    "/Users/endikajtezovic/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.25/microsoft.aspnetcore.app.ref.8.0.25.nupkg.sha512"
+  ],
+  "logs": []
+}

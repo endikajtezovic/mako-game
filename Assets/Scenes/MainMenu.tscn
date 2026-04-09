@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://cistfea8gt4pg"]
+
+[ext_resource type="Script" uid="uid://2v5rwpfdek4y" path="res://Assets/Scripts/UI/MainMenuManager.cs" id="1"]
+
+[node name="MainMenu" type="CanvasLayer" unique_id=16812340]
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="." unique_id=531159131]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.05, 0.1, 1)

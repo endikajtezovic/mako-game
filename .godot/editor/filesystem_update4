@@ -1,0 +1,8 @@
+res://Assets/Scripts/UI/MainMenuManager.cs
+res://Assets/Scripts/Core/GameManager.cs
+res://Assets/Scripts/Core/AudioManager.cs
+res://Assets/Scripts/UI/PixelButton.cs
+res://Assets/Scripts/UI/PixelLetter.cs
+res://Assets/Scripts/UI/CatEyes.cs
+res://Assets/Scripts/UI/EyeTransition.cs
+res://Assets/Scripts/UI/PixelTextButton.cs
