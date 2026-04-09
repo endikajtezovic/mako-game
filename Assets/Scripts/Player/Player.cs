@@ -13,9 +13,19 @@ public partial class Player : CharacterBody2D
     private float   _coyoteTimer  = 0f;
     private float   _jumpBuffer   = 0f;
     private bool    _wasOnFloor   = false;
+    private Vector2 _spawnPoint;
+    private Node2D  _visual;
+
+    public void Respawn()
+    {
+        Position  = _spawnPoint;
+        _velocity = Vector2.Zero;
+    }
 
     public override void _Ready()
     {
+        _spawnPoint = Position;
+        _visual = GetNode<Node2D>("Visual");
         EnsureAction("move_left",  Key.A);
         EnsureAction("move_right", Key.D);
         EnsureAction("jump",       Key.Space);
@@ -84,6 +94,10 @@ public partial class Player : CharacterBody2D
         // -- Horizontal --
         float dir = Input.GetAxis("move_left", "move_right");
         _velocity.X = dir * MoveSpeed;
+
+        // Flip sprite to face movement direction
+        if (dir != 0 && _visual != null)
+            _visual.Scale = new Vector2(Mathf.Sign(dir), 1f);
 
         Velocity = _velocity;
         MoveAndSlide();
