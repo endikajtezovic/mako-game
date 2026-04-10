@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("mako")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fd7c98fc7edd74fe7704804b02fc8c246361917c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+289d4dd6f6a67c0ded623009698e26393b2b7ef0")]
 [assembly: System.Reflection.AssemblyProductAttribute("mako")]
 [assembly: System.Reflection.AssemblyTitleAttribute("mako")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -5,10 +5,21 @@ public partial class CutsceneManager : Node2D
     private const float W = 1152f;
     private const float H = 648f;
 
-    private Texture2D _alien1Tex;
-    private Texture2D _alien2Tex;
-    private Texture2D _alien3Tex;
-    private Texture2D _heroTex;
+    // 8-directional alien sprites (shared by all aliens in cutscene)
+    private static readonly string[] _dirNames =
+    {
+        "east", "north-east", "north", "north-west",
+        "west", "south-west", "south", "south-east",
+    };
+    private readonly Texture2D[] _alienDirTex = new Texture2D[8];
+    private readonly Texture2D[] _dogFrames   = new Texture2D[6];
+    private float _bobTimer      = 0f;
+    private float _animTimer     = 0f;
+    private int   _animFrame     = 0;
+    private float _dogAnimTimer  = 0f;
+    private int   _dogAnimFrame  = 0;
+    private const float AnimFPS    = 8f;
+    private const float DogAnimFPS = 8f;
 
     private static readonly float[] StageDurations =
     {
@@ -52,10 +63,19 @@ public partial class CutsceneManager : Node2D
 
     public override void _Ready()
     {
-        _alien1Tex = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/alien1.png");
-        _alien2Tex = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/alien2.png");
-        _alien3Tex = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/alien3.png");
-        _heroTex   = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/hero.png");
+        for (int i = 0; i < _dirNames.Length; i++)
+        {
+            string path = "res://Assets/Sprites/Aliens/" + _dirNames[i] + ".png";
+            if (ResourceLoader.Exists(path))
+                _alienDirTex[i] = ResourceLoader.Load<Texture2D>(path);
+        }
+
+        for (int i = 0; i < _dogFrames.Length; i++)
+        {
+            string path = "res://Assets/Sprites/Dogs/east/frame_00" + i + ".png";
+            if (ResourceLoader.Exists(path))
+                _dogFrames[i] = ResourceLoader.Load<Texture2D>(path);
+        }
         EnsureInput();
         EnterStage(0);
     }
@@ -164,7 +184,24 @@ public partial class CutsceneManager : Node2D
     public override void _Process(double delta)
     {
         float dt = (float)delta;
-        _timer += dt;
+        _timer    += dt;
+        _bobTimer += dt * 3.0f;
+
+        // Advance alien animation frame
+        _animTimer += dt;
+        if (_animTimer >= 1f / AnimFPS)
+        {
+            _animTimer -= 1f / AnimFPS;
+            _animFrame = (_animFrame + 1) % _alienDirTex.Length;
+        }
+
+        // Advance dog animation frame
+        _dogAnimTimer += dt;
+        if (_dogAnimTimer >= 1f / DogAnimFPS)
+        {
+            _dogAnimTimer -= 1f / DogAnimFPS;
+            _dogAnimFrame = (_dogAnimFrame + 1) % _dogFrames.Length;
+        }
 
         // Typewriter
         if (_typeIdx < _fullText.Length)
@@ -410,8 +447,7 @@ public partial class CutsceneManager : Node2D
                 for (int i = 0; i < 3; i++)
                 {
                     DrawDog(_dogPos[i], DogColors[i], facingRight: true);
-                    Texture2D[] alienTexs = { _alien1Tex, _alien2Tex, _alien3Tex };
-                    DrawAlien(_alienPos[i], alienTexs[i], sneaky: false);
+                    DrawAlien(_alienPos[i], sneaky: false);
                 }
                 break;
 
@@ -423,7 +459,7 @@ public partial class CutsceneManager : Node2D
             case 8:
                 // Dog 0 (yellow) is off-left, hero alien follows
                 DrawDog(_dogPos[0], DogColors[0], facingRight: false, glowEyes: true);
-                DrawAlien(_alienPos[0], _heroTex, sneaky: true);
+                DrawAlien(_alienPos[0], sneaky: true);
                 break;
         }
     }
@@ -521,45 +557,49 @@ public partial class CutsceneManager : Node2D
 
     private void DrawDog(Vector2 pos, Color col, bool facingRight, bool glowEyes = false)
     {
-        float d = facingRight ? 1f : -1f;
-        Color shadow = col * new Color(0.70f, 0.70f, 0.70f);
-
-        // Tail
-        DrawRect(new Rect2(pos.X - d*22, pos.Y - 20, 8, d > 0 ? -14 : 14), shadow);
-        // Body
-        DrawRect(new Rect2(pos.X - 20, pos.Y - 24, 40, 24), col);
-        // Neck
-        DrawRect(new Rect2(pos.X + d*10, pos.Y - 36, 12, 14), col);
-        // Head
-        DrawRect(new Rect2(pos.X + d*8, pos.Y - 46, 26, 22), col);
-        // Snout
-        DrawRect(new Rect2(pos.X + d*30, pos.Y - 38, 14, 10), shadow);
-        // Ear
-        DrawRect(new Rect2(pos.X + d*12, pos.Y - 58, 10, 14), shadow);
-        // Eye
-        Color eye = glowEyes ? new Color(0.95f, 0.08f, 0.08f) : new Color(0.05f, 0.05f, 0.06f);
-        DrawCircle(new Vector2(pos.X + d*30, pos.Y - 42), 4, eye);
-        if (glowEyes)
-            DrawCircle(new Vector2(pos.X + d*30, pos.Y - 42), 7, new Color(1f, 0.12f, 0.12f, 0.35f));
-        // Legs
-        float[] lx = { -12, -2, 8, 18 };
-        foreach (float lxo in lx)
-            DrawRect(new Rect2(pos.X + lxo, pos.Y, 8, 16), shadow);
-    }
-
-    private void DrawAlien(Vector2 pos, Texture2D tex, bool sneaky)
-    {
+        var tex = _dogFrames[_dogAnimFrame];
         if (tex == null) return;
 
-        float a    = sneaky ? 0.85f : 1.0f;
-        float dy   = sneaky ? 8f    : 0f;
-        float size = sneaky ? 80f   : 100f;
+        float size = 80f;
+        float aspect = (float)tex.GetWidth() / tex.GetHeight();
+        float dw = size * aspect;
+        float dh = size;
+
+        // Flip horizontally for left-facing dogs
+        var dest = new Rect2(pos.X - dw / 2f, pos.Y - dh, dw, dh);
+        if (!facingRight)
+        {
+            // Mirror by shifting rect to the right and using negative width
+            dest = new Rect2(pos.X + dw / 2f, pos.Y - dh, -dw, dh);
+        }
+
+        // Tint the sprite with the dog's colour (yellow/black/red)
+        DrawTextureRect(tex, dest, false, col);
+
+        // Glowing eyes overlay — drawn on top at approximate eye position
+        if (glowEyes)
+        {
+            float ex = facingRight ? pos.X + dw * 0.28f : pos.X - dw * 0.28f;
+            float ey = pos.Y - dh * 0.72f;
+            DrawCircle(new Vector2(ex, ey), 5, new Color(0.95f, 0.08f, 0.08f));
+            DrawCircle(new Vector2(ex, ey), 8, new Color(1f, 0.12f, 0.12f, 0.35f));
+        }
+    }
+
+    private void DrawAlien(Vector2 pos, bool sneaky)
+    {
+        var tex = _alienDirTex[_animFrame];
+        if (tex == null) return;
+
+        float a    = sneaky ? 0.75f : 1.0f;
+        float size = sneaky ? 72f   : 90f;
+        float bob  = Mathf.Sin(_bobTimer) * 2.5f;
 
         float aspect = (float)tex.GetWidth() / tex.GetHeight();
         float dw = size * aspect;
         float dh = size;
 
-        var dest = new Rect2(pos.X - dw / 2f, pos.Y + dy - dh, dw, dh);
+        var dest = new Rect2(pos.X - dw / 2f, pos.Y + bob - dh, dw, dh);
         DrawTextureRect(tex, dest, false, new Color(1f, 1f, 1f, a));
     }
 }

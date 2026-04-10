@@ -11,3 +11,5 @@ res://Assets/Scripts/Environment/LevelBuilder.cs
 res://Assets/Scripts/Player/KillZone.cs
 res://Assets/Scripts/Player/MakoSprite.cs
 res://Assets/Scripts/Cutscene/CutsceneManager.cs
+res://Assets/Scripts/Enemy/AlienEnemy.cs
+res://Assets/Scripts/Enemy/AlienSprite.cs
