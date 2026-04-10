@@ -96,8 +96,9 @@ public partial class Player : CharacterBody2D
         _velocity.X = dir * MoveSpeed;
 
         // Flip sprite to face movement direction
+        // Sprite naturally faces left, so moving right = flip (Scale.X = -1)
         if (dir != 0 && _visual != null)
-            _visual.Scale = new Vector2(Mathf.Sign(dir), 1f);
+            _visual.Scale = new Vector2(-Mathf.Sign(dir), 1f);
 
         Velocity = _velocity;
         MoveAndSlide();

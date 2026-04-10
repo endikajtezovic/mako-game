@@ -10,14 +10,15 @@ public partial class LevelBuilder : Node
         // Ground — full width, 3 tiles thick
         (new Vector2I( 0, 17), 80, 3),
 
-        // Platforms
-        (new Vector2I( 8, 14),  7, 1),
-        (new Vector2I(18, 12),  7, 1),
-        (new Vector2I(28, 10),  7, 1),
-        (new Vector2I(38, 13),  6, 1),
-        (new Vector2I(48, 11),  7, 1),
-        (new Vector2I(58,  9),  6, 1),
-        (new Vector2I(68, 12),  8, 1),
+        // Platforms — max 3 tiles above ground (row 14), single jumps only
+        (new Vector2I( 6, 14),  6, 1),   // low, easy first step
+        (new Vector2I(15, 13),  5, 1),   // one tile higher
+        (new Vector2I(24, 14),  6, 1),   // back down
+        (new Vector2I(33, 12),  5, 1),   // medium height
+        (new Vector2I(42, 14),  6, 1),   // back down
+        (new Vector2I(51, 13),  5, 1),   // medium
+        (new Vector2I(60, 12),  6, 1),   // medium high
+        (new Vector2I(70, 14),  8, 1),   // long platform near end
     };
 
     public override void _Ready()

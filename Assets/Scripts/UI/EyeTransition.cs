@@ -59,7 +59,7 @@ public partial class EyeTransition : Node
                     _eyes.State = CatEyes.BlinkState.Closed;
                     break;
                 case 5: // load game
-                    GameManager.Instance.LoadScene("res://Assets/Scenes/Level1.tscn");
+                    GameManager.Instance.LoadScene("res://Assets/Scenes/OpeningCutscene.tscn");
                     break;
             }
         }

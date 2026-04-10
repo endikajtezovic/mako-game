@@ -10,3 +10,4 @@ res://Assets/Scripts/Player/Player.cs
 res://Assets/Scripts/Environment/LevelBuilder.cs
 res://Assets/Scripts/Player/KillZone.cs
 res://Assets/Scripts/Player/MakoSprite.cs
+res://Assets/Scripts/Cutscene/CutsceneManager.cs

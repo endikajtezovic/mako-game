@@ -1,262 +1,81 @@
 using Godot;
 
-[Tool]
+// Drives AnimatedSprite2D using Mako's hand-drawn PNG frames
 public partial class MakoSprite : Node2D
 {
-    private const int   PS        = 3;      // 3 screen px per sprite px → 48×48 on screen
-    private const float FrameTime = 0.13f;
+    private AnimatedSprite2D _sprite;
 
     public enum AnimState { Idle, Walk, Jump, Fall, Land }
-    private AnimState _state      = AnimState.Idle;
-    private int       _frame      = 0;
-    private float     _frameTimer = 0f;
-    private float     _landTimer  = 0f;
-    private const float LandDuration = 0.10f;
+    private AnimState _state = AnimState.Idle;
 
-    private static float FrameRate(AnimState s) => s switch { AnimState.Walk => 0.13f, AnimState.Idle => 0.55f, _ => 999f };
-    private static int   FrameCount(AnimState s) => s switch { AnimState.Walk => 4, AnimState.Idle => 2, _ => 1 };
-
-    // ── PALETTE ──────────────────────────────────────────────────────────────
-    // Decoded from raw sprite byte values
-    private static Color MapColor(int v) => v switch
+    public override void _Ready()
     {
-        199 => Colors.Transparent,
-        0   => new Color(0.06f, 0.04f, 0.04f),  // outline / black
-        10  => new Color(0.38f, 0.05f, 0.02f),  // hair dark root
-        77  => new Color(0.80f, 0.22f, 0.04f),  // hair mid red
-        102 => new Color(0.20f, 0.42f, 0.82f),  // blue shirt
-        175 => new Color(0.90f, 0.94f, 1.00f),  // white shirt stripe
-        74  => new Color(0.88f, 0.68f, 0.50f),  // skin / tan
-        82  => new Color(0.98f, 0.85f, 0.72f),  // light skin highlight
-        20  => new Color(0.20f, 0.12f, 0.04f),  // dark brown (pants/shoes)
-        218 => new Color(0.52f, 0.72f, 0.94f),  // light blue shirt accent
-        155 => new Color(0.52f, 0.35f, 0.18f),  // medium brown (arm/scarf)
-        _   => Colors.Transparent,
-    };
+        _sprite = new AnimatedSprite2D();
+        _sprite.Scale = new Vector2(3f, 3f);  // scale up from 32px to ~96px on screen
 
-    // ── RAW IDLE FRAME 0 — exact data from sprite source (16×16) ─────────────
-    private static readonly int[] Idle0 =
-    {
-        199,199,199,199,  0,  0,  0,  0,  0,199,199,199,199,199,199,199,  // row  0
-        199,199,199,  0, 10, 77, 77, 77, 10,  0,199,199,199,199,199,199,  // row  1
-        199,199,  0, 10, 77, 77, 77, 77, 77, 77,  0,199,199,199,199,199,  // row  2
-        199,199,  0, 77, 10, 10, 77, 77, 77, 77, 77,  0,199,199,199,199,  // row  3
-        199,199,  0,  0,102,102,102,102, 10, 77, 77,  0,199,199,199,199,  // row  4
-        199,199,  0,  0,175,175,175,175,102, 10, 77,  0,199,199,199,199,  // row  5
-        199,199,  0, 10,  0,102,102,102, 74, 74, 74,  0,  0,199,199,199,  // row  6
-        199,199,199,  0,  0, 74, 74, 82, 82, 20, 20, 74, 74,  0,199,199,  // row  7
-        199,199,199,  0, 20, 82, 82,218, 20, 82, 20, 20, 20,  0,199,199,  // row  8
-        199,199,  0,102,102,218,218,175,102,218,218, 20, 20,  0,199,199,  // row  9  (wait, this is 17 - let me recount)
-        199,199,  0,102,102,218,218,175,102,218, 74, 20,155,  0,199,199,  // row 10
-        199,199,199,  0, 20, 20, 20, 20, 20, 74, 74, 20, 82,155,  0,199,  // row 11
-        199,199,199,  0, 74, 74, 74, 74, 74, 74, 82, 74,155,155,  0,199,  // row 12
-        199,199,199,  0, 20, 20,  0,  0, 20, 20, 74,  0,  0,  0,199,199,  // row 13
-        199,199,199,  0, 20, 20,  0,199,  0, 20, 20,  0,199,199,199,199,  // row 14
-        199,199,199,  0,102, 20,  0,199,  0,102, 20,  0,199,199,199,199,  // row 15
-    };
+        var frames = new SpriteFrames();
+        _sprite.SpriteFrames = frames;
 
-    // ── IDLE FRAME 1 — subtle weight shift: right foot steps slightly out ─────
-    private static readonly int[] Idle1 =
-    {
-        199,199,199,199,  0,  0,  0,  0,  0,199,199,199,199,199,199,199,
-        199,199,199,  0, 10, 77, 77, 77, 10,  0,199,199,199,199,199,199,
-        199,199,  0, 10, 77, 77, 77, 77, 77, 77,  0,199,199,199,199,199,
-        199,199,  0, 77, 10, 10, 77, 77, 77, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,102,102,102,102, 10, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,175,175,175,175,102, 10, 77,  0,199,199,199,199,
-        199,199,  0, 10,  0,102,102,102, 74, 74, 74,  0,  0,199,199,199,
-        199,199,199,  0,  0, 74, 74, 82, 82, 20, 20, 74, 74,  0,199,199,
-        199,199,199,  0, 20, 82, 82,218, 20, 82, 20, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218,218, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218, 74, 20,155,  0,199,199,
-        199,199,199,  0, 20, 20, 20, 20, 20, 74, 74, 20, 82,155,  0,199,
-        199,199,199,  0, 74, 74, 74, 74, 74, 74, 82, 74,155,155,  0,199,
-        199,199,199,  0, 20, 20,  0,  0, 20, 20, 74,  0,  0,  0,199,199,
-        199,199,199,  0, 20, 20,  0,199,  0, 20, 20,  0,199,199,199,199,
-        199,199,199,  0,102, 20,  0,199,  0,102, 20,102,  0,199,199,199,  // right shoe shifts right 1px
-    };
+        // ── Walk animation — all 4 hand-drawn frames ─────────────────────────
+        frames.AddAnimation("walk");
+        frames.SetAnimationSpeed("walk", 8f);
+        frames.SetAnimationLoop("walk", true);
+        frames.AddFrame("walk", Load("makosprite.png"),  0);
+        frames.AddFrame("walk", Load("makosprite2.png"), 1);
+        frames.AddFrame("walk", Load("makosprite3.png"), 2);
+        frames.AddFrame("walk", Load("makosprite4.png"), 3);
 
-    // ── WALK FRAME 0 — right leg forward, left leg back ──────────────────────
-    private static readonly int[] Walk0 =
-    {
-        199,199,199,199,  0,  0,  0,  0,  0,199,199,199,199,199,199,199,
-        199,199,199,  0, 10, 77, 77, 77, 10,  0,199,199,199,199,199,199,
-        199,199,  0, 10, 77, 77, 77, 77, 77, 77,  0,199,199,199,199,199,
-        199,199,  0, 77, 10, 10, 77, 77, 77, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,102,102,102,102, 10, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,175,175,175,175,102, 10, 77,  0,199,199,199,199,
-        199,199,  0, 10,  0,102,102,102, 74, 74, 74,  0,  0,199,199,199,
-        199,199,199,  0, 74,  0, 74, 82, 82, 20,  0, 74, 74,  0,199,199,  // arms swing
-        199,199,199,  0, 20, 82, 82,218, 20, 82, 20, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218,218, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218, 74, 20,155,  0,199,199,
-        199,199,199,  0, 20, 20, 20, 20, 20, 74, 74, 20, 82,155,  0,199,
-        199,199,199,  0, 74, 74, 74, 74, 74, 74, 82, 74,155,155,  0,199,
-        199,199,  0, 20, 20,  0,  0,  0,  0, 20, 20, 74,  0,  0,199,199,  // legs spread
-        199,199,  0, 20, 20,  0,199,199,  0,  0, 20, 20,  0,199,199,199,  // left back right fwd
-        199,199,  0,102, 20,  0,199,199,  0,  0,102, 20,  0,199,199,199,  // shoes
-    };
+        // ── Idle — just frame 0 held ──────────────────────────────────────────
+        frames.AddAnimation("idle");
+        frames.SetAnimationSpeed("idle", 2f);
+        frames.SetAnimationLoop("idle", true);
+        frames.AddFrame("idle", Load("makosprite.png"), 0);
+        frames.AddFrame("idle", Load("makosprite2.png"), 1);
 
-    // ── WALK FRAME 1 — feet passing (same as idle) ────────────────────────────
-    private static readonly int[] Walk1 = Idle0;
+        // ── Jump / Fall / Land — use frame 0 as placeholder ──────────────────
+        foreach (var anim in new[] { "jump", "fall", "land" })
+        {
+            frames.AddAnimation(anim);
+            frames.SetAnimationSpeed(anim, 1f);
+            frames.SetAnimationLoop(anim, false);
+            frames.AddFrame(anim, Load("makosprite.png"), 0);
+        }
 
-    // ── WALK FRAME 2 — left leg forward, right leg back ──────────────────────
-    private static readonly int[] Walk2 =
-    {
-        199,199,199,199,  0,  0,  0,  0,  0,199,199,199,199,199,199,199,
-        199,199,199,  0, 10, 77, 77, 77, 10,  0,199,199,199,199,199,199,
-        199,199,  0, 10, 77, 77, 77, 77, 77, 77,  0,199,199,199,199,199,
-        199,199,  0, 77, 10, 10, 77, 77, 77, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,102,102,102,102, 10, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,175,175,175,175,102, 10, 77,  0,199,199,199,199,
-        199,199,  0, 10,  0,102,102,102, 74, 74, 74,  0,  0,199,199,199,
-        199,199,199,  0,  0, 74, 74, 82, 82, 20,  0, 74,  0,  0,199,199,  // arms swing opposite
-        199,199,199,  0, 20, 82, 82,218, 20, 82, 20, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218,218, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218, 74, 20,155,  0,199,199,
-        199,199,199,  0, 20, 20, 20, 20, 20, 74, 74, 20, 82,155,  0,199,
-        199,199,199,  0, 74, 74, 74, 74, 74, 74, 82, 74,155,155,  0,199,
-        199,199,199,  0, 20, 20, 74,  0,  0, 20, 20,  0,  0,199,199,199,  // legs spread opposite
-        199,199,199,  0, 20, 20,  0,199,199,  0, 20, 20,  0,199,199,199,
-        199,199,199,  0,102, 20,  0,199,199,  0,102, 20,  0,199,199,199,
-    };
+        _sprite.Animation = "idle";
+        _sprite.Play();
+        AddChild(_sprite);
+    }
 
-    // ── WALK FRAME 3 — feet passing again ────────────────────────────────────
-    private static readonly int[] Walk3 = Idle0;
+    private static Texture2D Load(string filename)
+        => ResourceLoader.Load<Texture2D>($"res://Assets/Sprites/Player/{filename}");
 
-    // ── JUMP ─────────────────────────────────────────────────────────────────
-    private static readonly int[] JumpData =
-    {
-        199,199,199,199,  0,  0,  0,  0,  0,199,199,199,199,199,199,199,
-        199,199,199,  0, 10, 77, 77, 77, 10,  0,199,199,199,199,199,199,
-        199,199,  0, 10, 77, 77, 77, 77, 77, 77,  0,199,199,199,199,199,
-        199,199,  0, 77, 10, 10, 77, 77, 77, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,102,102,102,102, 10, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,175,175,175,175,102, 10, 77,  0,199,199,199,199,
-        199,199,  0, 10,  0,102,102,102, 74, 74, 74,  0,  0,199,199,199,
-        199,199,  0, 74, 74, 74, 82, 82, 82, 20,  0, 74, 74,  0,199,199,  // arms raise up
-        199,199,  0, 20, 20, 82,218, 20, 82, 20, 20,  0,199,199,199,199,  // body compact
-        199,199,  0,102,102,218,218,175,102,218,218, 20,199,199,199,199,
-        199,199,  0,102,102,218,218,175,102,218, 74, 20,199,199,199,199,
-        199,199,199,  0, 20, 20, 20, 20, 74, 74, 20, 82,199,199,199,199,
-        199,199,199,  0, 74, 20, 74, 74, 82, 74,155,  0,199,199,199,199,  // knees tuck up
-        199,199,199,199,  0, 20, 20, 20, 20, 74,  0,199,199,199,199,199,  // feet tucked
-        199,199,199,199,  0,102, 20, 20,102,  0,199,199,199,199,199,199,  // shoes up
-        199,199,199,199,199,  0,  0,  0,  0,199,199,199,199,199,199,199,
-    };
-
-    // ── FALL ─────────────────────────────────────────────────────────────────
-    private static readonly int[] FallData =
-    {
-        199,199,199,199,  0,  0,  0,  0,  0,199,199,199,199,199,199,199,
-        199,199,199,  0, 10, 77, 77, 77, 10,  0,199,199,199,199,199,199,
-        199,199,  0, 10, 77, 77, 77, 77, 77, 77,  0,199,199,199,199,199,
-        199,199,  0, 77, 10, 10, 77, 77, 77, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,102,102,102,102, 10, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,175,175,175,175,102, 10, 77,  0,199,199,199,199,
-        199,199,  0, 10,  0,102,102,102, 74, 74, 74,  0,  0,199,199,199,
-        199,199,  0, 74, 74, 74, 82, 82, 82, 20, 20, 74, 74,  0,199,199,  // arms out wide
-        199,199,199,  0, 20, 82, 82,218, 20, 82, 20, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218,218, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218, 74, 20,155,  0,199,199,
-        199,199,199,  0, 20, 20, 20, 20, 20, 74, 74, 20, 82,155,  0,199,
-        199,199,199,  0, 74, 74, 74, 74, 74, 74, 82, 74,155,155,  0,199,
-        199,199,  0, 20, 20,  0,  0,  0, 20, 20, 74,  0,  0,  0,199,199,  // legs dangle slightly apart
-        199,199,  0, 20, 20,  0,199,199, 20, 20,  0,199,199,199,199,199,
-        199,199,  0,102, 20,  0,199,199,102, 20,  0,199,199,199,199,199,
-    };
-
-    // ── LAND — squash ─────────────────────────────────────────────────────────
-    private static readonly int[] LandData =
-    {
-        199,199,199,199,  0,  0,  0,  0,  0,199,199,199,199,199,199,199,
-        199,199,199,  0, 10, 77, 77, 77, 10,  0,199,199,199,199,199,199,
-        199,199,  0, 10, 77, 77, 77, 77, 77, 77,  0,199,199,199,199,199,
-        199,199,  0, 77, 10, 10, 77, 77, 77, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,102,102,102,102, 10, 77, 77,  0,199,199,199,199,
-        199,199,  0,  0,175,175,175,175,102, 10, 77,  0,199,199,199,199,
-        199,199,  0, 10,  0,102,102,102, 74, 74, 74,  0,  0,199,199,199,
-        199,199,199,  0,  0, 74, 74, 82, 82, 20, 20, 74, 74,  0,199,199,
-        199,199,199,  0, 20, 82, 82,218, 20, 82, 20, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218,218, 20, 20,  0,199,199,
-        199,199,  0,102,102,218,218,175,102,218, 74, 20,155,  0,199,199,
-        199,199,199,  0, 20, 20, 20, 20, 20, 74, 74, 20, 82,155,  0,199,
-        199,199,  0, 74, 74, 74, 74, 74, 74, 74, 82, 74,155,155,  0,199,  // body dips
-        199,199,  0, 20, 20, 20,  0,  0, 20, 20, 74, 20,  0,  0,199,199,  // legs squash wide
-        199,199,  0, 20, 20, 20,  0,199, 20, 20, 20,  0,199,199,199,199,
-        199,199,  0,102,102, 20,  0,199,102, 20, 20,  0,199,199,199,199,  // shoes flatten
-    };
-
-    private int[] GetFrame() => _state switch
-    {
-        AnimState.Idle => _frame == 0 ? Idle0 : Idle1,
-        AnimState.Walk => _frame switch { 0 => Walk0, 1 => Walk1, 2 => Walk2, _ => Walk3 },
-        AnimState.Jump => JumpData,
-        AnimState.Fall => FallData,
-        AnimState.Land => LandData,
-        _              => Idle0,
-    };
-
-    // ── PROCESS ──────────────────────────────────────────────────────────────
     public override void _Process(double delta)
     {
-        if (Engine.IsEditorHint()) return;
         var body = GetParent<CharacterBody2D>();
         if (body == null) return;
 
-        float vx = body.Velocity.X, vy = body.Velocity.Y;
+        float vx = body.Velocity.X;
+        float vy = body.Velocity.Y;
         bool  onFloor = body.IsOnFloor();
-
-        if (_landTimer > 0f)
-        {
-            _landTimer -= (float)delta;
-            if (_landTimer <= 0f)
-                SetState(Mathf.Abs(vx) > 10f ? AnimState.Walk : AnimState.Idle);
-        }
 
         AnimState desired;
         if (!onFloor)
             desired = vy < 0f ? AnimState.Jump : AnimState.Fall;
-        else if (_state == AnimState.Jump || _state == AnimState.Fall)
-        {
-            SetState(AnimState.Land);
-            _landTimer = LandDuration;
-            return;
-        }
         else
             desired = Mathf.Abs(vx) > 10f ? AnimState.Walk : AnimState.Idle;
 
-        if (_landTimer <= 0f && desired != _state)
-            SetState(desired);
-
-        _frameTimer += (float)delta;
-        if (_frameTimer >= FrameRate(_state))
+        if (desired != _state)
         {
-            _frameTimer = 0f;
-            _frame = (_frame + 1) % FrameCount(_state);
-            QueueRedraw();
-        }
-    }
-
-    private void SetState(AnimState s)
-    {
-        if (_state == s) return;
-        _state = s; _frame = 0; _frameTimer = 0f;
-        QueueRedraw();
-    }
-
-    // ── DRAW ─────────────────────────────────────────────────────────────────
-    public override void _Draw()
-    {
-        int[] frame = GetFrame();
-        float ox = -(16 * PS) / 2f;  // center on x=0
-
-        for (int r = 0; r < 16; r++)
-            for (int c = 0; c < 16; c++)
+            _state = desired;
+            string anim = _state switch
             {
-                Color col = MapColor(frame[r * 16 + c]);
-                if (col.A < 0.01f) continue;
-                DrawRect(new Rect2(ox + c * PS, r * PS, PS, PS), col);
-            }
+                AnimState.Walk => "walk",
+                AnimState.Jump => "jump",
+                AnimState.Fall => "fall",
+                AnimState.Land => "land",
+                _              => "idle",
+            };
+            _sprite.Play(anim);
+        }
     }
 }

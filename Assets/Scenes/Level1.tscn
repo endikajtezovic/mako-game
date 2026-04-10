@@ -39,5 +39,5 @@ script = ExtResource("1")
 shape = SubResource("1")
 
 [node name="Visual" type="Node2D" parent="Player"]
-position = Vector2(0, -38)
+position = Vector2(0, -23)
 script = ExtResource("4")
