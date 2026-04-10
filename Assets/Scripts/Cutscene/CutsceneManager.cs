@@ -5,6 +5,11 @@ public partial class CutsceneManager : Node2D
     private const float W = 1152f;
     private const float H = 648f;
 
+    private Texture2D _alien1Tex;
+    private Texture2D _alien2Tex;
+    private Texture2D _alien3Tex;
+    private Texture2D _heroTex;
+
     private static readonly float[] StageDurations =
     {
         3.5f,  // 0  space — rocket launches
@@ -47,6 +52,10 @@ public partial class CutsceneManager : Node2D
 
     public override void _Ready()
     {
+        _alien1Tex = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/alien1.png");
+        _alien2Tex = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/alien2.png");
+        _alien3Tex = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/alien3.png");
+        _heroTex   = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Environment/hero.png");
         EnsureInput();
         EnterStage(0);
     }
@@ -401,7 +410,8 @@ public partial class CutsceneManager : Node2D
                 for (int i = 0; i < 3; i++)
                 {
                     DrawDog(_dogPos[i], DogColors[i], facingRight: true);
-                    DrawAlien(_alienPos[i], sneaky: false);
+                    Texture2D[] alienTexs = { _alien1Tex, _alien2Tex, _alien3Tex };
+                    DrawAlien(_alienPos[i], alienTexs[i], sneaky: false);
                 }
                 break;
 
@@ -411,9 +421,9 @@ public partial class CutsceneManager : Node2D
                 break;
 
             case 8:
-                // Dog 0 (yellow) is off-left, alien follows
+                // Dog 0 (yellow) is off-left, hero alien follows
                 DrawDog(_dogPos[0], DogColors[0], facingRight: false, glowEyes: true);
-                DrawAlien(_alienPos[0], sneaky: true);
+                DrawAlien(_alienPos[0], _heroTex, sneaky: true);
                 break;
         }
     }
@@ -537,25 +547,19 @@ public partial class CutsceneManager : Node2D
             DrawRect(new Rect2(pos.X + lxo, pos.Y, 8, 16), shadow);
     }
 
-    private void DrawAlien(Vector2 pos, bool sneaky)
+    private void DrawAlien(Vector2 pos, Texture2D tex, bool sneaky)
     {
-        // Sneaky = hunched lower, more transparent
-        float a = sneaky ? 0.80f : 1.0f;
-        float dy = sneaky ? 10f : 0f;
+        if (tex == null) return;
 
-        // Body blob
-        DrawCircle(new Vector2(pos.X, pos.Y + dy), 22, new Color(0.12f, 0.52f, 0.22f, a));
-        DrawCircle(new Vector2(pos.X, pos.Y + dy), 25, new Color(0.08f, 0.40f, 0.16f, a * 0.35f));
-        // Eyes — two glowing dots
-        DrawCircle(new Vector2(pos.X - 7, pos.Y + dy - 8), 5, new Color(0.85f, 1f, 0.12f, a));
-        DrawCircle(new Vector2(pos.X + 7, pos.Y + dy - 8), 5, new Color(0.85f, 1f, 0.12f, a));
-        DrawCircle(new Vector2(pos.X - 7, pos.Y + dy - 8), 3, new Color(1f, 1f, 0.4f, a));
-        DrawCircle(new Vector2(pos.X + 7, pos.Y + dy - 8), 3, new Color(1f, 1f, 0.4f, a));
-        // Tentacles
-        for (int i = -1; i <= 1; i++)
-        {
-            DrawRect(new Rect2(pos.X + i*10 - 3, pos.Y + dy + 20, 6, 16),
-                     new Color(0.10f, 0.44f, 0.18f, a));
-        }
+        float a    = sneaky ? 0.85f : 1.0f;
+        float dy   = sneaky ? 8f    : 0f;
+        float size = sneaky ? 80f   : 100f;
+
+        float aspect = (float)tex.GetWidth() / tex.GetHeight();
+        float dw = size * aspect;
+        float dh = size;
+
+        var dest = new Rect2(pos.X - dw / 2f, pos.Y + dy - dh, dw, dh);
+        DrawTextureRect(tex, dest, false, new Color(1f, 1f, 1f, a));
     }
 }
