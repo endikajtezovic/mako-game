@@ -5,6 +5,9 @@ public partial class CutsceneManager : Node2D
     private const float W = 1152f;
     private const float H = 648f;
 
+    private Texture2D _meteorBg;
+    private Texture2D _earthBg;
+
     // 8-directional alien sprites (shared by all aliens in cutscene)
     private static readonly string[] _dirNames =
     {
@@ -54,6 +57,7 @@ public partial class CutsceneManager : Node2D
 
     private Vector2 _rocketPos;
     private Vector2 _shipPos;
+    private float   _shipBury = 0f;  // 0 = hovering, 1 = fully buried (only crown visible)
 
     // Dialogue typewriter
     private string _fullText  = "";
@@ -63,6 +67,9 @@ public partial class CutsceneManager : Node2D
 
     public override void _Ready()
     {
+        _meteorBg = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/space_alien_meteor.png");
+        _earthBg  = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/summer4.png");
+
         for (int i = 0; i < _dirNames.Length; i++)
         {
             string path = "res://Assets/Sprites/Aliens/" + _dirNames[i] + ".png";
@@ -142,7 +149,8 @@ public partial class CutsceneManager : Node2D
                 break; // title card only
 
             case 6:
-                _shipPos = new Vector2(W * 0.50f, -100f);
+                _shipPos  = new Vector2(W * 0.50f, -100f);
+                _shipBury = 0f;
                 break;
 
             case 7:
@@ -230,9 +238,15 @@ public partial class CutsceneManager : Node2D
         if (_stage == 1)
             _rocketPos.Y = Mathf.MoveToward(_rocketPos.Y, H * 0.63f, 220f * dt);
 
-        // Ship descent
+        // Ship descends to ground level in stage 6
         if (_stage == 6)
-            _shipPos.Y = Mathf.MoveToward(_shipPos.Y, H * 0.56f, 55f * dt);
+            _shipPos.Y = Mathf.MoveToward(_shipPos.Y, H * 0.70f, 60f * dt);
+
+        // Burrows into ground in stages 7 and 8
+        if (_stage == 7)
+            _shipBury = Mathf.MoveToward(_shipBury, 0.55f, 0.12f * dt);
+        if (_stage == 8)
+            _shipBury = Mathf.MoveToward(_shipBury, 1.0f,  0.10f * dt);
 
         // Fade
         if (_stage == 9)
@@ -276,15 +290,15 @@ public partial class CutsceneManager : Node2D
         switch (_stage)
         {
             case 0: DrawSpace();               break;
-            case 1: DrawPlanet(crashing:true); break;
+            case 1: DrawMeteorBg(); DrawRocket(_rocketPos); break;
             case 2:
-            case 3: DrawPlanet(crashing:false); break;
+            case 3: DrawMeteorBg(); break;
             case 4: DrawControlRoom();          break;
             case 5: DrawRect(new Rect2(0,0,W,H), new Color(0.04f,0.04f,0.06f)); break;
             case 6:
             case 7:
             case 8:
-            case 9: DrawEarth();               break;
+            case 9: DrawEarthBg(); break;
         }
     }
 
@@ -325,6 +339,13 @@ public partial class CutsceneManager : Node2D
             DrawCircle(new Vector2(ex - 16, ey + 14), 14, new Color(0.8f, 0.8f, 0.8f, 0.5f));
             DrawCircle(new Vector2(ex + 16, ey + 14), 14, new Color(0.8f, 0.8f, 0.8f, 0.5f));
         }
+    }
+
+    private void DrawMeteorBg()
+    {
+        if (_meteorBg == null) return;
+        // Stretch to fill the full screen, drawn first so everything overlays on top
+        DrawTextureRect(_meteorBg, new Rect2(0, 0, W, H), false);
     }
 
     private void DrawPlanet(bool crashing)
@@ -369,6 +390,14 @@ public partial class CutsceneManager : Node2D
         {
             DrawCrashedRocket(new Vector2(W * 0.36f, H * 0.65f));
         }
+    }
+
+    private void DrawEarthBg()
+    {
+        if (_earthBg != null)
+            DrawTextureRect(_earthBg, new Rect2(0, 0, W, H), false);
+        else
+            DrawEarth(); // fallback if texture missing
     }
 
     private void DrawEarth()
@@ -540,19 +569,129 @@ public partial class CutsceneManager : Node2D
 
     private void DrawShip(Vector2 pos)
     {
-        // Glow underneath
-        DrawRect(new Rect2(pos.X - 75, pos.Y + 14, 150, 10), new Color(0.25f, 0.92f, 0.45f, 0.35f));
-        // Saucer layers
-        DrawRect(new Rect2(pos.X - 90, pos.Y - 8,  180, 22), new Color(0.48f, 0.52f, 0.58f));
-        DrawRect(new Rect2(pos.X - 56, pos.Y - 26, 112, 20), new Color(0.58f, 0.62f, 0.68f));
-        DrawRect(new Rect2(pos.X - 28, pos.Y - 40, 56,  16), new Color(0.66f, 0.70f, 0.76f));
-        DrawRect(new Rect2(pos.X - 12, pos.Y - 50, 24,  12), new Color(0.72f, 0.76f, 0.82f));
-        // Light ring
-        for (int i = -4; i <= 4; i++)
-            DrawCircle(new Vector2(pos.X + i * 20, pos.Y + 4), 4, new Color(0.75f, 1f, 0.40f, 0.92f));
-        // Outline
-        DrawRect(new Rect2(pos.X - 91, pos.Y - 9,  182, 2), new Color(0.25f, 0.28f, 0.32f));
-        DrawRect(new Rect2(pos.X - 91, pos.Y + 14, 182, 2), new Color(0.25f, 0.28f, 0.32f));
+        float pulse = Mathf.Sin(_bobTimer * 1.4f) * 0.06f + 0.94f;
+
+        // When burying, bob stops and body sinks below ground
+        float bob    = Mathf.Sin(_bobTimer * 0.9f) * 4f * (1f - _shipBury);
+        float ground = H * 0.70f;
+        // How many pixels the body centre has sunk below ground
+        float sinkPx = _shipBury * 140f;
+
+        float cx = pos.X;
+        float cy = pos.Y + bob;
+
+        // Body centre sinks as it buries
+        float bcy = cy + sinkPx;
+
+        // ── Outer glow (fades as it buries) ──────────────────────────────────
+        float glowA = 1f - _shipBury;
+        DrawCircle(new Vector2(cx, bcy - 18), 130, new Color(0.12f, 0.55f, 0.22f, 0.08f * glowA));
+        DrawCircle(new Vector2(cx, bcy - 18), 108, new Color(0.14f, 0.62f, 0.28f, 0.10f * glowA));
+
+        // ── Tentacles ────────────────────────────────────────────────────────
+        // When buried they splay horizontally out of the ground like roots
+        void Tentacle(float ox, float dirX)
+        {
+            var col1 = new Color(0.18f, 0.28f, 0.20f);
+            var col2 = new Color(0.12f, 0.20f, 0.14f);
+
+            if (_shipBury < 0.3f)
+            {
+                // Curled up — landing-strut pose
+                DrawRect(new Rect2(cx + ox - 10, bcy + 28, 20, 32), col1);
+                DrawRect(new Rect2(cx + ox + dirX * 6 - 8, bcy + 56, 16, 22), col1);
+                DrawRect(new Rect2(cx + ox + dirX * 14 - 5, bcy + 72, 10, 14), col2);
+                DrawRect(new Rect2(cx + ox + dirX * 10 - 4, bcy + 82, 8,  8),  col2);
+                DrawCircle(new Vector2(cx + ox + dirX * 4, bcy + 40), 3, new Color(0.30f, 0.55f, 0.35f, 0.6f));
+                DrawCircle(new Vector2(cx + ox + dirX * 10, bcy + 63), 2, new Color(0.30f, 0.55f, 0.35f, 0.5f));
+            }
+            else
+            {
+                // Splayed out along ground surface, emerging from dirt
+                float t   = (_shipBury - 0.3f) / 0.7f;  // 0..1 as it buries
+                float ext = t * 120f;                     // how far they splay out
+                float gy  = ground - 6f;
+                DrawRect(new Rect2(cx + ox - 8, gy, 16, 12), col1);                                       // base nub
+                DrawRect(new Rect2(cx + ox + dirX * 20 - 6, gy + 4, 12, 10), col1);                       // mid
+                DrawRect(new Rect2(cx + ox + dirX * ext * 0.5f - 5, gy + 6, 10, 8), col2);                // extended
+                DrawRect(new Rect2(cx + ox + dirX * ext * 0.85f - 4, gy + 8, 8, 6), col2);               // tip
+                DrawCircle(new Vector2(cx + ox + dirX * ext * 0.35f, gy + 5), 3, new Color(0.30f, 0.55f, 0.35f, 0.5f));
+            }
+        }
+
+        Tentacle(-90, -1);
+        Tentacle(-48, -1);
+        Tentacle(  0,  1);
+        Tentacle( 48,  1);
+        Tentacle( 90,  1);
+
+        // ── Underbelly glow (only visible before buried) ─────────────────────
+        if (_shipBury < 0.5f)
+        {
+            float ga = (1f - _shipBury * 2f);
+            DrawRect(new Rect2(cx - 100, bcy + 26, 200, 6),  new Color(0.20f, 0.90f, 0.40f, 0.18f * pulse * ga));
+            DrawRect(new Rect2(cx -  80, bcy + 28, 160, 4),  new Color(0.25f, 1.00f, 0.50f, 0.25f * pulse * ga));
+            DrawRect(new Rect2(cx -  50, bcy + 30, 100, 3),  new Color(0.35f, 1.00f, 0.60f, 0.35f * pulse * ga));
+        }
+
+        // ── Dirt displacement — pushed-up mound as it burrows ────────────────
+        if (_shipBury > 0.1f)
+        {
+            float mound = _shipBury * 28f;
+            var   dirt  = new Color(0.28f, 0.20f, 0.10f);
+            DrawRect(new Rect2(cx - 130, ground - mound, 260, mound + 12), dirt);
+            DrawRect(new Rect2(cx - 100, ground - mound - 8, 200, 10), new Color(0.35f, 0.26f, 0.14f));
+            DrawRect(new Rect2(cx -  60, ground - mound - 14, 120, 8), new Color(0.22f, 0.16f, 0.08f));
+        }
+
+        // ── Main body — drawn on top of ground cover ─────────────────────────
+        var skinDark  = new Color(0.14f, 0.24f, 0.16f);
+        var skinMid   = new Color(0.18f, 0.32f, 0.20f);
+        var skinLight = new Color(0.22f, 0.40f, 0.25f);
+        var skinHi    = new Color(0.28f, 0.50f, 0.30f);
+
+        DrawRect(new Rect2(cx - 110, bcy +  8, 220, 24), skinDark);
+        DrawRect(new Rect2(cx - 100, bcy +  2, 200, 28), skinDark);
+        DrawRect(new Rect2(cx - 100, bcy - 20, 200, 32), skinMid);
+        DrawRect(new Rect2(cx -  88, bcy - 38, 176, 24), skinMid);
+        DrawRect(new Rect2(cx -  72, bcy - 56, 144, 24), skinLight);
+        DrawRect(new Rect2(cx -  52, bcy - 72, 104, 20), skinLight);
+        DrawRect(new Rect2(cx -  32, bcy - 86,  64, 16), skinHi);
+        DrawRect(new Rect2(cx -  16, bcy - 96,  32, 12), skinHi);
+        DrawRect(new Rect2(cx -   6, bcy -104,  12,  10), new Color(0.30f, 0.52f, 0.32f));
+
+        // Skin patches
+        var patch = new Color(0.10f, 0.18f, 0.12f, 0.55f);
+        DrawRect(new Rect2(cx - 70, bcy - 10, 28, 18), patch);
+        DrawRect(new Rect2(cx + 30, bcy -  2, 22, 14), patch);
+        DrawRect(new Rect2(cx - 20, bcy + 10, 18, 10), patch);
+        DrawRect(new Rect2(cx + 55, bcy - 28, 20, 12), patch);
+        DrawRect(new Rect2(cx - 65, bcy - 40, 16, 10), patch);
+
+        // ── Ground covers lower body once buried ──────────────────────────────
+        if (_shipBury > 0f)
+        {
+            float coverY = ground - _shipBury * 28f;
+            DrawRect(new Rect2(0, coverY, W, H - coverY), new Color(0.20f, 0.38f, 0.16f));
+            DrawRect(new Rect2(0, coverY, W, 8), new Color(0.28f, 0.20f, 0.10f));
+        }
+
+        // ── Eyes ─────────────────────────────────────────────────────────────
+        float eyePulse = Mathf.Sin(_bobTimer * 2.2f) * 0.15f + 0.85f;
+        DrawRect(new Rect2(cx - 62, bcy - 54, 36, 26), new Color(0.05f, 0.05f, 0.06f));
+        DrawCircle(new Vector2(cx - 44, bcy - 41), 14, new Color(0.90f, 0.78f, 0.10f, eyePulse));
+        DrawCircle(new Vector2(cx - 44, bcy - 41),  9, new Color(0.95f, 0.88f, 0.20f, eyePulse));
+        DrawRect(new Rect2(cx - 50, bcy - 50, 12, 18), new Color(0.02f, 0.02f, 0.03f));
+        DrawCircle(new Vector2(cx - 38, bcy - 47),  3, new Color(1f, 1f, 0.9f, 0.55f));
+
+        DrawRect(new Rect2(cx + 26, bcy - 54, 36, 26), new Color(0.05f, 0.05f, 0.06f));
+        DrawCircle(new Vector2(cx + 44, bcy - 41), 14, new Color(0.55f, 0.88f, 1.00f, eyePulse));
+        DrawCircle(new Vector2(cx + 44, bcy - 41),  9, new Color(0.70f, 0.94f, 1.00f, eyePulse));
+        DrawRect(new Rect2(cx + 38, bcy - 50, 12, 18), new Color(0.02f, 0.02f, 0.03f));
+        DrawCircle(new Vector2(cx + 50, bcy - 47),  3, new Color(1f, 1f, 0.9f, 0.55f));
+
+        DrawCircle(new Vector2(cx - 44, bcy - 41), 18, new Color(0.90f, 0.78f, 0.10f, 0.12f * eyePulse));
+        DrawCircle(new Vector2(cx + 44, bcy - 41), 18, new Color(0.55f, 0.88f, 1.00f, 0.16f * eyePulse));
     }
 
     private void DrawDog(Vector2 pos, Color col, bool facingRight, bool glowEyes = false)

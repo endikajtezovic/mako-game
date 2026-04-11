@@ -13,3 +13,6 @@ res://Assets/Scripts/Player/MakoSprite.cs
 res://Assets/Scripts/Cutscene/CutsceneManager.cs
 res://Assets/Scripts/Enemy/AlienEnemy.cs
 res://Assets/Scripts/Enemy/AlienSprite.cs
+res://Assets/Scripts/Player/CatSprite.cs
+res://Assets/Scripts/Player/CatPlayer.cs
+res://Assets/Scripts/Environment/PushableRock.cs

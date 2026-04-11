@@ -1,0 +1,129 @@
+{
+  "character": {
+    "id": "01d8121b-85e2-46b5-9b97-2dca2552724f",
+    "name": "Pixel art sprite (32x32 or 48x48) of a white Persian cat with fluffy fur and a round face. Bright green eyes, small pink nose. Compact body, short legs, long fluffy tail. Side view facing right. Clean silhouette, readable at small size. Limited color palette (white, light gray shading, green eyes). No gradients, no shadows, no anti-aliasing. Simple, cute but not overly detailed.",
+    "prompt": "Pixel art sprite (32x32 or 48x48) of a white Persian cat with fluffy fur and a round face. Bright green eyes, small pink nose. Compact body, short legs, long fluffy tail. Side view facing right. Clean silhouette, readable at small size. Limited color palette (white, light gray shading, green eyes). No gradients, no shadows, no anti-aliasing. Simple, cute but not overly detailed.",
+    "size": {
+      "width": 68,
+      "height": 68
+    },
+    "template_id": "cat",
+    "directions": 8,
+    "view": "low top-down",
+    "created_at": "2026-04-10T19:35:36.868275+00:00"
+  },
+  "frames": {
+    "rotations": {
+      "south": "rotations/south.png",
+      "south-east": "rotations/south-east.png",
+      "east": "rotations/east.png",
+      "north-east": "rotations/north-east.png",
+      "north": "rotations/north.png",
+      "north-west": "rotations/north-west.png",
+      "west": "rotations/west.png",
+      "south-west": "rotations/south-west.png"
+    },
+    "animations": {
+      "Seated_on_Belly_Idle-cafa95cf": {
+        "west": [
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_000.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_001.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_002.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_003.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_004.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_005.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_006.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_007.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_008.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/west/frame_009.png"
+        ],
+        "south": [
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_000.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_001.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_002.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_003.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_004.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_005.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_006.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_007.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_008.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/south/frame_009.png"
+        ],
+        "east": [
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_000.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_001.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_002.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_003.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_004.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_005.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_006.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_007.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_008.png",
+          "animations/Seated_on_Belly_Idle-cafa95cf/east/frame_009.png"
+        ]
+      },
+      "animation-742400f8": {
+        "east": [
+          "animations/animation-742400f8/east/frame_000.png",
+          "animations/animation-742400f8/east/frame_001.png",
+          "animations/animation-742400f8/east/frame_002.png",
+          "animations/animation-742400f8/east/frame_003.png",
+          "animations/animation-742400f8/east/frame_004.png",
+          "animations/animation-742400f8/east/frame_005.png",
+          "animations/animation-742400f8/east/frame_006.png",
+          "animations/animation-742400f8/east/frame_007.png"
+        ],
+        "south": [
+          "animations/animation-742400f8/south/frame_000.png",
+          "animations/animation-742400f8/south/frame_001.png",
+          "animations/animation-742400f8/south/frame_002.png",
+          "animations/animation-742400f8/south/frame_003.png",
+          "animations/animation-742400f8/south/frame_004.png",
+          "animations/animation-742400f8/south/frame_005.png",
+          "animations/animation-742400f8/south/frame_006.png",
+          "animations/animation-742400f8/south/frame_007.png"
+        ],
+        "west": [
+          "animations/animation-742400f8/west/frame_000.png",
+          "animations/animation-742400f8/west/frame_001.png",
+          "animations/animation-742400f8/west/frame_002.png",
+          "animations/animation-742400f8/west/frame_003.png",
+          "animations/animation-742400f8/west/frame_004.png",
+          "animations/animation-742400f8/west/frame_005.png",
+          "animations/animation-742400f8/west/frame_006.png",
+          "animations/animation-742400f8/west/frame_007.png"
+        ]
+      },
+      "animation-a4bb8116": {
+        "south": [
+          "animations/animation-a4bb8116/south/frame_000.png",
+          "animations/animation-a4bb8116/south/frame_001.png",
+          "animations/animation-a4bb8116/south/frame_002.png",
+          "animations/animation-a4bb8116/south/frame_003.png",
+          "animations/animation-a4bb8116/south/frame_004.png",
+          "animations/animation-a4bb8116/south/frame_005.png"
+        ]
+      },
+      "animation-bad59ade": {
+        "east": [
+          "animations/animation-bad59ade/east/frame_000.png",
+          "animations/animation-bad59ade/east/frame_001.png",
+          "animations/animation-bad59ade/east/frame_002.png",
+          "animations/animation-bad59ade/east/frame_003.png",
+          "animations/animation-bad59ade/east/frame_004.png",
+          "animations/animation-bad59ade/east/frame_005.png"
+        ],
+        "west": [
+          "animations/animation-bad59ade/west/frame_000.png",
+          "animations/animation-bad59ade/west/frame_001.png",
+          "animations/animation-bad59ade/west/frame_002.png",
+          "animations/animation-bad59ade/west/frame_003.png",
+          "animations/animation-bad59ade/west/frame_004.png",
+          "animations/animation-bad59ade/west/frame_005.png"
+        ]
+      }
+    }
+  },
+  "export_version": "2.0",
+  "export_date": "2026-04-10T19:51:34.540633"
+}
