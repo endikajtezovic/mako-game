@@ -7,6 +7,9 @@ public partial class CutsceneManager : Node2D
 
     private Texture2D _meteorBg;
     private Texture2D _earthBg;
+    private Texture2D _rocketTex;
+    private Texture2D _landOnMeteorTex;
+    private Texture2D _alienShipTex;
 
     // 8-directional alien sprites (shared by all aliens in cutscene)
     private static readonly string[] _dirNames =
@@ -67,8 +70,11 @@ public partial class CutsceneManager : Node2D
 
     public override void _Ready()
     {
-        _meteorBg = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/space_alien_meteor.png");
-        _earthBg  = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/summer4.png");
+        _meteorBg  = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/space_alien_meteor.png");
+        _earthBg   = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/summer4.png");
+        _rocketTex       = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/earth_rocket.png");
+        _landOnMeteorTex = ResourceLoader.Load<Texture2D>("res://land_on_meteor.png");
+        _alienShipTex    = ResourceLoader.Load<Texture2D>("res://alien_ship.png");
 
         for (int i = 0; i < _dirNames.Length; i++)
         {
@@ -111,7 +117,8 @@ public partial class CutsceneManager : Node2D
         _fullText  = "";
         _typeIdx   = 0;
 
-        float gnd = H * 0.70f;
+        float gnd      = H * 0.70f;  // meteor / space stages
+        float earthGnd = H * 0.80f;  // earth stages — matches summer4.png horizon
 
         switch (s)
         {
@@ -156,23 +163,23 @@ public partial class CutsceneManager : Node2D
             case 7:
                 for (int i = 0; i < 3; i++)
                 {
-                    _dogPos[i]    = new Vector2(W * 0.50f + i * 18, gnd - 38);
+                    _dogPos[i]    = new Vector2(W * 0.50f + i * 18, earthGnd - 38);
                     // yellow goes left, black forward-right, red far right
                     float[] tx = { W * 0.05f, W * 0.55f, W * 1.10f };
-                    _dogTarget[i] = new Vector2(tx[i], gnd - 38);
+                    _dogTarget[i] = new Vector2(tx[i], earthGnd - 38);
                 }
                 break;
 
             case 8:
                 // Secret alien sneaks out after dogs are gone
-                _alienPos[0]    = new Vector2(W * 0.52f, gnd - 38);
-                _alienTarget[0] = new Vector2(W * 0.05f, gnd - 38);  // follows yellow dog
+                _alienPos[0]    = new Vector2(W * 0.52f, earthGnd - 38);
+                _alienTarget[0] = new Vector2(W * 0.05f, earthGnd - 38);  // follows yellow dog
                 // Other dogs already off screen — freeze them
                 for (int i = 1; i < 3; i++)
                 {
                     _dogPos[i]    = _dogTarget[i];
-                    _alienPos[i]  = new Vector2(-200, gnd - 38);
-                    _alienTarget[i] = new Vector2(-200, gnd - 38);
+                    _alienPos[i]  = new Vector2(-200, earthGnd - 38);
+                    _alienTarget[i] = new Vector2(-200, earthGnd - 38);
                 }
                 break;
 
@@ -240,7 +247,7 @@ public partial class CutsceneManager : Node2D
 
         // Ship descends to ground level in stage 6
         if (_stage == 6)
-            _shipPos.Y = Mathf.MoveToward(_shipPos.Y, H * 0.70f, 60f * dt);
+            _shipPos.Y = Mathf.MoveToward(_shipPos.Y, H * 0.80f, 60f * dt);
 
         // Burrows into ground in stages 7 and 8
         if (_stage == 7)
@@ -289,16 +296,31 @@ public partial class CutsceneManager : Node2D
     {
         switch (_stage)
         {
-            case 0: DrawSpace();               break;
-            case 1: DrawMeteorBg(); DrawRocket(_rocketPos); break;
+            case 0: DrawSpace(); break;
+            case 1:
+                DrawMeteorBg();
+                DrawMeteorGround();
+                DrawLander(_rocketPos);
+                break;
             case 2:
-            case 3: DrawMeteorBg(); break;
-            case 4: DrawControlRoom();          break;
+            case 3:
+                DrawMeteorBg();
+                DrawMeteorGround();
+                DrawLander(new Vector2(W * 0.36f, H * 0.70f));
+                break;
+            case 4: DrawControlRoom(); break;
             case 5: DrawRect(new Rect2(0,0,W,H), new Color(0.04f,0.04f,0.06f)); break;
             case 6:
             case 7:
             case 8:
-            case 9: DrawEarthBg(); break;
+                DrawEarthBg();
+                DrawAlienShip(_shipPos);   // drawn before ground so ground covers buried portion
+                DrawEarthGround();
+                break;
+            case 9:
+                DrawEarthBg();
+                DrawEarthGround();
+                break;
         }
     }
 
@@ -346,6 +368,57 @@ public partial class CutsceneManager : Node2D
         if (_meteorBg == null) return;
         // Stretch to fill the full screen, drawn first so everything overlays on top
         DrawTextureRect(_meteorBg, new Rect2(0, 0, W, H), false);
+    }
+
+    private void DrawMeteorGround()
+    {
+        float gnd = H * 0.70f;
+        // Solid rocky base fills the lower portion
+        DrawRect(new Rect2(0, gnd, W, H - gnd), new Color(0.16f, 0.10f, 0.07f));
+        // Surface edge — slightly lighter rim so there's a clear horizon line
+        DrawRect(new Rect2(0, gnd, W, 5), new Color(0.38f, 0.26f, 0.16f));
+        DrawRect(new Rect2(0, gnd + 5, W, 4), new Color(0.28f, 0.18f, 0.11f));
+        // Rock bumps tiled across the surface
+        int[] rx = { 20,  130, 260, 390, 520, 640, 760, 870, 990, 1080 };
+        int[] rw = { 90,  70,  110, 80,  100, 70,  95,  85,  75,  60   };
+        int[] rh = { 14,  10,  18,  12,  16,  11,  15,  13,  10,  12   };
+        for (int i = 0; i < rx.Length; i++)
+            DrawRect(new Rect2(rx[i], gnd - rh[i] + 5, rw[i], rh[i]), new Color(0.22f, 0.14f, 0.09f));
+        // Small boulders scattered on surface
+        DrawCircle(new Vector2(W * 0.08f, gnd + 16), 11, new Color(0.14f, 0.09f, 0.06f));
+        DrawCircle(new Vector2(W * 0.45f, gnd + 22), 15, new Color(0.13f, 0.08f, 0.05f));
+        DrawCircle(new Vector2(W * 0.72f, gnd + 14), 9,  new Color(0.15f, 0.10f, 0.07f));
+        DrawCircle(new Vector2(W * 0.92f, gnd + 18), 12, new Color(0.14f, 0.09f, 0.06f));
+    }
+
+    private void DrawEarthGround()
+    {
+        float gnd = H * 0.80f;
+        // Solid fill below the horizon so characters have something to stand on
+        DrawRect(new Rect2(0, gnd,     W, H - gnd), new Color(0.20f, 0.35f, 0.14f));
+        // Surface edge
+        DrawRect(new Rect2(0, gnd,     W, 5),  new Color(0.28f, 0.46f, 0.20f));
+        DrawRect(new Rect2(0, gnd + 5, W, 4),  new Color(0.22f, 0.30f, 0.12f));
+    }
+
+    private void DrawAlienShip(Vector2 pos)
+    {
+        if (_alienShipTex == null) return;
+
+        const float size = 200f;
+        const float half = size / 2f;
+        float bob     = Mathf.Sin(_bobTimer * 0.9f) * 4f * (1f - _shipBury);
+        // As _shipBury grows the ship sinks further below ground
+        float cy      = pos.Y + bob + _shipBury * size * 0.6f;
+        DrawTextureRect(_alienShipTex, new Rect2(pos.X - half, cy - half, size, size), false);
+    }
+
+    private void DrawLander(Vector2 pos)
+    {
+        if (_landOnMeteorTex == null) return;
+        // Draw the lander sprite bottom-anchored at pos (same convention as DrawRocket)
+        const float size = 100f;
+        DrawTextureRect(_landOnMeteorTex, new Rect2(pos.X - size / 2f, pos.Y - size, size, size), false);
     }
 
     private void DrawPlanet(bool crashing)
@@ -526,7 +599,18 @@ public partial class CutsceneManager : Node2D
 
     private void DrawRocket(Vector2 pos)
     {
-        // Fins
+        if (_rocketTex != null)
+        {
+            // Sprite is 128x128; scale to ~160px tall (larger than the old procedural rocket).
+            // Anchor pos at the fin-bottom (pos.Y) so launch/crash positioning stays the same.
+            const float scale = 160f / 128f;
+            float w = 128f * scale;
+            float h = 128f * scale;
+            DrawTextureRect(_rocketTex, new Rect2(pos.X - w / 2f, pos.Y - h, w, h), false);
+            return;
+        }
+
+        // Fallback procedural rocket
         DrawColoredPolygon(new Vector2[]
         {
             new Vector2(pos.X - 14, pos.Y),
@@ -539,18 +623,14 @@ public partial class CutsceneManager : Node2D
             new Vector2(pos.X + 26, pos.Y + 22),
             new Vector2(pos.X + 14, pos.Y + 22),
         }, new Color(0.60f, 0.60f, 0.65f));
-        // Body
         DrawRect(new Rect2(pos.X - 14, pos.Y - 60, 28, 80), new Color(0.76f, 0.76f, 0.80f));
-        // Soviet red band
         DrawRect(new Rect2(pos.X - 14, pos.Y - 20, 28, 10), new Color(0.82f, 0.12f, 0.12f));
-        // Nose cone
         DrawColoredPolygon(new Vector2[]
         {
             new Vector2(pos.X,      pos.Y - 88),
             new Vector2(pos.X - 14, pos.Y - 60),
             new Vector2(pos.X + 14, pos.Y - 60),
         }, new Color(0.82f, 0.12f, 0.12f));
-        // Window
         DrawCircle(new Vector2(pos.X, pos.Y - 42), 9, new Color(0.55f, 0.75f, 0.92f));
         DrawCircle(new Vector2(pos.X, pos.Y - 42), 6, new Color(0.70f, 0.88f, 1.00f));
     }
