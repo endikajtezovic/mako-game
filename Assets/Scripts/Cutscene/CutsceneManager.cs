@@ -31,13 +31,13 @@ public partial class CutsceneManager : Node2D
     {
         3.5f,  // 0  space — rocket launches
         3.0f,  // 1  alien planet — rocket crashes
-        3.0f,  // 2  dogs walk from wreckage
-        3.0f,  // 3  aliens emerge, follow dogs
+        4.5f,  // 2  dogs walk from wreckage
+        4.5f,  // 3  aliens emerge, follow dogs
         4.0f,  // 4  earth control room reaction
         3.0f,  // 5  "3 Years Later" card
         3.5f,  // 6  earth — saucer descends
-        4.0f,  // 7  dogs walk out, scatter
-        4.0f,  // 8  alien sneaks out
+        5.0f,  // 7  dogs walk out, scatter
+        5.0f,  // 8  alien sneaks out
         2.0f,  // 9  fade to black
     };
 
@@ -73,8 +73,8 @@ public partial class CutsceneManager : Node2D
         _meteorBg  = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/space_alien_meteor.png");
         _earthBg   = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/summer4.png");
         _rocketTex       = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/earth_rocket.png");
-        _landOnMeteorTex = ResourceLoader.Load<Texture2D>("res://land_on_meteor.png");
-        _alienShipTex    = ResourceLoader.Load<Texture2D>("res://alien_ship.png");
+        _landOnMeteorTex = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/land_on_meteor.png");
+        _alienShipTex    = ResourceLoader.Load<Texture2D>("res://Assets/Sprites/Backgrounds/alien_ship.png");
 
         for (int i = 0; i < _dirNames.Length; i++)
         {
@@ -132,19 +132,20 @@ public partial class CutsceneManager : Node2D
                 break;
 
             case 2:
+                // Dogs emerge from wreckage, spaced 120px apart, walk off right edge
                 for (int i = 0; i < 3; i++)
                 {
-                    _dogPos[i]    = new Vector2(W * 0.32f + i * 28, gnd - 38);
-                    _dogTarget[i] = new Vector2(W * 0.80f + i * 44, gnd - 38);
+                    _dogPos[i]    = new Vector2(W * 0.30f + i * 70, gnd - 38);
+                    _dogTarget[i] = new Vector2(W + 150f  + i * 120, gnd - 38);
                 }
                 break;
 
             case 3:
-                // Aliens start near crash, move after dogs
+                // Aliens start near crash spaced 120px apart, follow dogs off right
                 for (int i = 0; i < 3; i++)
                 {
-                    _alienPos[i]    = new Vector2(W * 0.20f + i * 50, gnd - 38);
-                    _alienTarget[i] = new Vector2(W * 1.15f + i * 60, gnd - 38);
+                    _alienPos[i]    = new Vector2(W * 0.15f + i * 120, gnd - 38);
+                    _alienTarget[i] = new Vector2(W + 150f   + i * 130, gnd - 38);
                 }
                 break;
 
@@ -163,23 +164,24 @@ public partial class CutsceneManager : Node2D
             case 7:
                 for (int i = 0; i < 3; i++)
                 {
-                    _dogPos[i]    = new Vector2(W * 0.50f + i * 18, earthGnd - 38);
-                    // yellow goes left, black forward-right, red far right
-                    float[] tx = { W * 0.05f, W * 0.55f, W * 1.10f };
-                    _dogTarget[i] = new Vector2(tx[i], earthGnd - 38);
+                    _dogPos[i] = new Vector2(W * 0.50f + i * 80, earthGnd - 38);
                 }
+                // yellow exits left, black and red exit right — all off screen
+                _dogTarget[0] = new Vector2(-150f,    earthGnd - 38);
+                _dogTarget[1] = new Vector2(W + 150f, earthGnd - 38);
+                _dogTarget[2] = new Vector2(W + 300f, earthGnd - 38);
                 break;
 
             case 8:
-                // Secret alien sneaks out after dogs are gone
+                // Secret alien sneaks out after dogs are gone, follows yellow off left
                 _alienPos[0]    = new Vector2(W * 0.52f, earthGnd - 38);
-                _alienTarget[0] = new Vector2(W * 0.05f, earthGnd - 38);  // follows yellow dog
-                // Other dogs already off screen — freeze them
+                _alienTarget[0] = new Vector2(-150f,     earthGnd - 38);
+                // Other dogs and aliens already off screen — freeze them
                 for (int i = 1; i < 3; i++)
                 {
-                    _dogPos[i]    = _dogTarget[i];
-                    _alienPos[i]  = new Vector2(-200, earthGnd - 38);
-                    _alienTarget[i] = new Vector2(-200, earthGnd - 38);
+                    _dogPos[i]      = _dogTarget[i];
+                    _alienPos[i]    = new Vector2(-300, earthGnd - 38);
+                    _alienTarget[i] = new Vector2(-300, earthGnd - 38);
                 }
                 break;
 
@@ -233,8 +235,8 @@ public partial class CutsceneManager : Node2D
         // Move dogs
         for (int i = 0; i < 3; i++)
         {
-            _dogPos[i]   = _dogPos[i].MoveToward(_dogTarget[i],   55f * dt);
-            _alienPos[i] = _alienPos[i].MoveToward(_alienTarget[i], 48f * dt);
+            _dogPos[i]   = _dogPos[i].MoveToward(_dogTarget[i],   200f * dt);
+            _alienPos[i] = _alienPos[i].MoveToward(_alienTarget[i], 180f * dt);
         }
 
         // Rocket launch — rises in stage 0
@@ -779,7 +781,7 @@ public partial class CutsceneManager : Node2D
         var tex = _dogFrames[_dogAnimFrame];
         if (tex == null) return;
 
-        float size = 80f;
+        float size = 110f;
         float aspect = (float)tex.GetWidth() / tex.GetHeight();
         float dw = size * aspect;
         float dh = size;
@@ -811,7 +813,7 @@ public partial class CutsceneManager : Node2D
         if (tex == null) return;
 
         float a    = sneaky ? 0.75f : 1.0f;
-        float size = sneaky ? 72f   : 90f;
+        float size = sneaky ? 96f   : 120f;
         float bob  = Mathf.Sin(_bobTimer) * 2.5f;
 
         float aspect = (float)tex.GetWidth() / tex.GetHeight();

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c63csmumtey8j"
-path="res://.godot/imported/alien_ship.png-d480776ae22dcc21ca7d4233d63c0ff2.ctex"
+uid="uid://bhmvbtwy4tdf3"
+path="res://.godot/imported/frame_002.png-69ba95e9d639202066aee6013333d5d3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://alien_ship.png"
-dest_files=["res://.godot/imported/alien_ship.png-d480776ae22dcc21ca7d4233d63c0ff2.ctex"]
+source_file="res://Assets/Sprites/Player/mako-cat/idle/frame_002.png"
+dest_files=["res://.godot/imported/frame_002.png-69ba95e9d639202066aee6013333d5d3.ctex"]
 
 [params]
 

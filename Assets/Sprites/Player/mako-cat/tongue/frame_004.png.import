@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://djawvkjubw4yf"
-path="res://.godot/imported/earth_rocket.png-2f9a6377e2aba15ff9be483908b9b97a.ctex"
+uid="uid://bae5nearqeqe7"
+path="res://.godot/imported/frame_004.png-63cb4d69f87b46db5999e1d7e537e3f4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://earth_rocket.png"
-dest_files=["res://.godot/imported/earth_rocket.png-2f9a6377e2aba15ff9be483908b9b97a.ctex"]
+source_file="res://Assets/Sprites/Player/mako-cat/tongue/frame_004.png"
+dest_files=["res://.godot/imported/frame_004.png-63cb4d69f87b46db5999e1d7e537e3f4.ctex"]
 
 [params]
 

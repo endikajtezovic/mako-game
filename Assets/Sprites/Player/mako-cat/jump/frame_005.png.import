@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1bxdmoedpkgw"
-path="res://.godot/imported/land_on_meteor.png-71c6d83dcf12d99a4f82e160e9d828f4.ctex"
+uid="uid://dhfgm2ohgxji7"
+path="res://.godot/imported/frame_005.png-f3b38dacfa5f40aa05c5a48401a75993.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://land_on_meteor.png"
-dest_files=["res://.godot/imported/land_on_meteor.png-71c6d83dcf12d99a4f82e160e9d828f4.ctex"]
+source_file="res://Assets/Sprites/Player/mako-cat/jump/frame_005.png"
+dest_files=["res://.godot/imported/frame_005.png-f3b38dacfa5f40aa05c5a48401a75993.ctex"]
 
 [params]
 

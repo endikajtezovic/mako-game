@@ -21,6 +21,14 @@ public partial class Player : CharacterBody2D
     [Export] public float DashDuration   = 0.18f;
     [Export] public float GrabRange      = 72f;
 
+    // ── Tongue grapple exports ────────────────────────────────────────────────
+    [Export] public float TongueRange     = 300f;
+    [Export] public float TongueExtendSpd = 1400f;  // px/sec tip travels during extension
+    [Export] public float ReelSpeed       = 130f;
+    [Export] public float MinRopeLength   = 40f;
+    [Export] public float MaxRopeLength   = 300f;
+    [Export] public float SwingSteerForce = 280f;
+
     // ── Sprite paths ─────────────────────────────────────────────────────────
     private const string SpriteBase = "res://Assets/Sprites/Player/mako-sprite/";
     private const string WalkBase   = SpriteBase + "animations/Walking-c1cb9d4b/";
@@ -47,8 +55,15 @@ public partial class Player : CharacterBody2D
     private Vector2 _dashDir   = Vector2.Zero;
 
     // ── Grab state ───────────────────────────────────────────────────────────
-    private PushableRock _heldRock  = null;
+    private PushableRock _heldRock   = null;
     private bool         _facingWest = false;
+
+    // ── Tongue grapple state ──────────────────────────────────────────────────
+    private bool    _grappling     = false;
+    private Vector2 _grapplePoint  = Vector2.Zero;
+    private float   _ropeLength    = 0f;
+    private bool    _tongueOut     = false;
+    private float   _tongueExtendT = 0f;  // 0→1 progress of tip reaching anchor
 
     // ── Sprite ───────────────────────────────────────────────────────────────
     private AnimatedSprite2D _sprite;
@@ -73,6 +88,7 @@ public partial class Player : CharacterBody2D
         EnsureAction("jump",       Key.Space);
         EnsureAction("dash",       Key.X);
         EnsureAction("grab",       Key.E);
+        EnsureAction("grapple",    Key.Q);
 
         BuildSprite();
 
@@ -131,11 +147,46 @@ public partial class Player : CharacterBody2D
         ReleaseRock();
     }
 
+    // ── Lifecycle (redraw) ────────────────────────────────────────────────────
+
+    public override void _Process(double delta)
+    {
+        if (_tongueOut) QueueRedraw();
+    }
+
     // ── Physics ──────────────────────────────────────────────────────────────
 
     public override void _PhysicsProcess(double delta)
     {
         float dt      = (float)delta;
+
+        // ── Tongue grapple input ──────────────────────────────────────────────
+        if (Input.IsActionJustPressed("grapple"))
+        {
+            if (_tongueOut)
+                Detach();
+            else
+                FireGrapple();
+        }
+
+        // Tongue is extending toward anchor — advance tip, fall freely meanwhile
+        if (_tongueOut && !_grappling)
+        {
+            _tongueExtendT += dt * TongueExtendSpd / _ropeLength;
+            if (_tongueExtendT >= 1f)
+            {
+                _tongueExtendT = 1f;
+                _grappling     = true;
+            }
+        }
+
+        // Full swing physics — skip the rest of the movement loop
+        if (_grappling)
+        {
+            ProcessGrapple(dt);
+            return;
+        }
+
         bool  onFloor = IsOnFloor();
         bool  onWall  = IsOnWall();
 
@@ -354,6 +405,115 @@ public partial class Player : CharacterBody2D
         {
             InputMap.AddAction(action);
             InputMap.ActionAddEvent(action, new InputEventKey { Keycode = key });
+        }
+    }
+
+    // ── Tongue grapple ────────────────────────────────────────────────────────
+
+    private void FireGrapple()
+    {
+        var mouseWorld = GetGlobalMousePosition();
+        var from       = GlobalPosition + new Vector2(_facingWest ? -6f : 6f, -30f);
+        var dir        = (mouseWorld - from).Normalized();
+        var to         = from + dir * TongueRange;
+
+        var space = GetWorld2D().DirectSpaceState;
+        var query = PhysicsRayQueryParameters2D.Create(from, to);
+        query.Exclude = new Godot.Collections.Array<Rid> { GetRid() };
+        var hit = space.IntersectRay(query);
+
+        if (hit.Count == 0) return;
+
+        _grapplePoint  = (Vector2)hit["position"];
+        _ropeLength    = Mathf.Clamp((GlobalPosition - _grapplePoint).Length(),
+                                     MinRopeLength, MaxRopeLength);
+        _tongueOut     = true;
+        _grappling     = false;
+        _tongueExtendT = 0f;
+    }
+
+    private void ProcessGrapple(float dt)
+    {
+        // Reel in / out
+        if (Input.IsActionPressed("move_up"))
+            _ropeLength = Mathf.Max(MinRopeLength, _ropeLength - ReelSpeed * dt);
+        if (Input.IsActionPressed("move_down"))
+            _ropeLength = Mathf.Min(MaxRopeLength, _ropeLength + ReelSpeed * dt);
+
+        // Gravity
+        _velocity.Y += Gravity * dt;
+
+        // Tangential steering with A / D — lets you pump the swing
+        Vector2 arm     = Position - _grapplePoint;
+        Vector2 radial  = arm.Normalized();
+        Vector2 tangent = new Vector2(-radial.Y, radial.X);
+        float   steer   = Input.GetAxis("move_left", "move_right");
+        _velocity += tangent * steer * SwingSteerForce * dt;
+
+        // Rope constraint: strip the outward radial velocity when rope is taut
+        if (arm.Length() >= _ropeLength * 0.98f)
+        {
+            float radVel = _velocity.Dot(radial);
+            if (radVel > 0f) _velocity -= radial * radVel;
+        }
+
+        Velocity = _velocity;
+        MoveAndSlide();
+        _velocity = Velocity;
+
+        // Re-enforce position constraint after collision response
+        arm = Position - _grapplePoint;
+        if (arm.Length() > _ropeLength)
+            Position = _grapplePoint + arm.Normalized() * _ropeLength;
+
+        // Space — release with a launch kick, burn the extra jump
+        if (Input.IsActionJustPressed("jump"))
+        {
+            _velocity.Y += JumpForce * 0.55f;
+            _jumpsLeft = 0;
+            Detach();
+            return;
+        }
+
+        if (IsOnFloor()) Detach();
+
+        UpdateAnim(isGrabbing: false, IsOnFloor());
+    }
+
+    private void Detach()
+    {
+        _grappling     = false;
+        _tongueOut     = false;
+        _tongueExtendT = 0f;
+        QueueRedraw();
+    }
+
+    // ── Draw (tongue visual) ──────────────────────────────────────────────────
+
+    public override void _Draw()
+    {
+        if (!_tongueOut) return;
+
+        // Mouth in local space — offset matches sprite position + rough mouth height
+        var mouth  = new Vector2(_facingWest ? -8f : 8f, -48f);
+        // Anchor in local space
+        var anchor = _grapplePoint - GlobalPosition;
+        // Tip travels from mouth toward anchor as tongue extends
+        var tip    = mouth.Lerp(anchor, _tongueExtendT);
+
+        // Slight arc: mid-point displaced perpendicular to the tongue direction
+        var mid = mouth.Lerp(tip, 0.45f)
+                + new Vector2(0f, Mathf.Sin(_tongueExtendT * Mathf.Pi) * 10f);
+
+        var tongueCol = new Color(0.88f, 0.20f, 0.22f);
+        DrawLine(mouth, mid, tongueCol, 3.5f, true);
+        DrawLine(mid,   tip, tongueCol, 3.5f, true);
+
+        if (_grappling)
+        {
+            // Hook / anchor point glow
+            DrawCircle(anchor, 6f,  new Color(0.70f, 0.12f, 0.14f));
+            DrawCircle(anchor, 10f, new Color(1f, 0.30f, 0.30f, 0.28f));
         }
     }
 }

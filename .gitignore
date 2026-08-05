@@ -39,3 +39,7 @@
 
 # debug information files
 *.dwo
+
+# Claude Code personal files
+CLAUDE.md
+.claude/
